@@ -3,6 +3,10 @@
 Hide videos in the X/Twitter feed behind a click-to-reveal overlay while keeping tweet text visible.
 
 ### Install (Chromium browsers)
+Get it from chrome web store: https://chromewebstore.google.com/detail/xtwitter-feed-video-block/khdpmhkldgcomdhoclgcbhkaeeilaedm
+
+or
+
 - Open `chrome://extensions` (or your Chromium-based browser's extensions page)
 - Enable "Developer mode"
 - Click "Load unpacked" and select this folder (`xtension`)
