@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "X/Twitter Feed Video Blocker",
-  "version": "1.0.0",
-  "description": "Hide videos in the X/Twitter feed behind a click-to-reveal overlay while keeping tweet text visible.",
+  "name": "X/Twitter Feed Video/Image Blocker",
+  "version": "2.0.0",
+  "description": "Hide videos, images and quote tweets with media in the X/Twitter feed behind a click-to-reveal overlay while keeping tweet text visible, so that you're more conscious of what you're watching.",
   "content_scripts": [
     {
       "matches": [

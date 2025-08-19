@@ -1,6 +1,6 @@
 ## X/Twitter Feed Video Blocker
 
-Hide videos in the X/Twitter feed behind a click-to-reveal overlay while keeping tweet text visible.
+Hide videos/images and quote tweets with media in the X/Twitter feed, simply click on the view button to reveal the content of that particular tweet, keeping you consicous of what you're consuming.
 
 ### Install (Chromium browsers)
 Get it from chrome web store: https://chromewebstore.google.com/detail/xtwitter-feed-video-block/khdpmhkldgcomdhoclgcbhkaeeilaedm
