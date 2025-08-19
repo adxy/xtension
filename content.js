@@ -1,3 +1,21 @@
+function showChangelogIfNeeded() {
+  const currentVersion = '2.0.0'; 
+  const lastSeenVersion = localStorage.getItem('xtension_last_version');
+  
+  if (lastSeenVersion !== currentVersion) {
+    const isFirstTime = !lastSeenVersion;
+    const type = isFirstTime ? 'install' : 'update';
+    
+    const changelogUrl = chrome.runtime.getURL('changelog/changelog.html?type=' + type + '&version=' + currentVersion);
+    const newTab = window.open(changelogUrl, '_blank');
+    
+    if (newTab) {
+      localStorage.setItem('xtension_last_version', currentVersion);
+      newTab.focus();
+    }
+  }
+}
+
 function createViewHiddenButton(tweetElement) {
   if (tweetElement.querySelector('.view-hidden-btn')) {
     return;
@@ -139,6 +157,8 @@ function processAllTweets() {
 }
 
 function init() {
+  showChangelogIfNeeded();
+  
   processAllTweets();
   
   setTimeout(processAllTweets, 1000);
