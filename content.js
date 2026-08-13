@@ -1,14 +1,32 @@
+const MEDIA_SELECTOR = [
+  '[data-testid="tweetPhoto"]',
+  '[data-testid="videoPlayer"]',
+  '[data-testid="videoComponent"]',
+  '[data-testid="previewInterstitial"]'
+].join(',');
+
+const EYE_OPEN_PATH = 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z';
+const EYE_CLOSED_PATH = 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z';
+
+// Only the major.minor part is compared, so patch releases (2.0.1 -> 2.0.2) ship
+// quietly and the changelog stays reserved for feature updates, as it claims.
+// Normalising the stored value too keeps existing "2.0.0" entries from firing.
+function releaseOf(version) {
+  return String(version || '').split('.').slice(0, 2).join('.');
+}
+
 function showChangelogIfNeeded() {
-  const currentVersion = '2.0.0'; 
-  const lastSeenVersion = localStorage.getItem('xtension_last_version');
-  
-  if (lastSeenVersion !== currentVersion) {
-    const isFirstTime = !lastSeenVersion;
+  const currentVersion = chrome.runtime.getManifest().version;
+  const currentRelease = releaseOf(currentVersion);
+  const storedVersion = localStorage.getItem('xtension_last_version');
+
+  if (releaseOf(storedVersion) !== currentRelease) {
+    const isFirstTime = !storedVersion;
     const type = isFirstTime ? 'install' : 'update';
-    
+
     const changelogUrl = chrome.runtime.getURL('changelog/changelog.html?type=' + type + '&version=' + currentVersion);
     const newTab = window.open(changelogUrl, '_blank');
-    
+
     if (newTab) {
       localStorage.setItem('xtension_last_version', currentVersion);
       newTab.focus();
@@ -16,37 +34,89 @@ function showChangelogIfNeeded() {
   }
 }
 
+// X regenerates its atomic class names (css-*, r-*) on every build, so the media
+// container is located structurally instead: walk up from each media node for as
+// long as the ancestor still contains no tweet text. That yields the largest
+// block that is purely media, which is exactly what we want to hide.
+function findMediaBlocks(tweetElement) {
+  const blocks = new Set();
+
+  tweetElement.querySelectorAll(MEDIA_SELECTOR).forEach((media) => {
+    let node = media;
+    let block = media;
+
+    while (node && node !== tweetElement) {
+      if (node.querySelector('[data-testid="tweetText"]')) {
+        break;
+      }
+      block = node;
+      node = node.parentElement;
+    }
+
+    blocks.add(block);
+  });
+
+  const all = [...blocks];
+  return all.filter((block) => !all.some((other) => other !== block && other.contains(block)));
+}
+
+// The tweet header's action cluster (Grok, the "more" caret) is the only ancestor
+// of the caret laid out as a flex row with a real column-gap -- every wrapper below
+// it uses the default "normal". Keying off that instead of class names both survives
+// X's build hashes and lets the row's own 8px gap space our button for free.
+function findActionRow(tweetElement) {
+  const caret = tweetElement.querySelector('[data-testid="caret"]');
+  if (!caret) return null;
+
+  let node = caret.parentElement;
+  while (node && node !== tweetElement) {
+    const style = getComputedStyle(node);
+    if (style.display === 'flex' && style.columnGap && style.columnGap !== 'normal') {
+      return node;
+    }
+    node = node.parentElement;
+  }
+
+  return caret.parentElement;
+}
+
+function setMediaHidden(tweetElement, hidden) {
+  findMediaBlocks(tweetElement).forEach((block) => {
+    block.style.setProperty('display', hidden ? 'none' : 'block', 'important');
+    block.classList.toggle('show-hidden', !hidden);
+  });
+}
+
 function createViewHiddenButton(tweetElement) {
   if (tweetElement.querySelector('.view-hidden-btn')) {
     return;
   }
 
-  const hiddenContent = tweetElement.querySelector('div.css-175oi2r.r-9aw3ui');
-  if (!hiddenContent) {
+  if (findMediaBlocks(tweetElement).length === 0) {
     return;
   }
 
   const viewButton = document.createElement('button');
   viewButton.className = 'view-hidden-btn';
   viewButton.setAttribute('aria-label', 'View hidden content in this tweet');
-  
+
   const svgIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svgIcon.setAttribute('viewBox', '0 0 24 24');
   svgIcon.setAttribute('aria-hidden', 'true');
-  svgIcon.classList.add('r-4qtqp9', 'r-yyyyoo', 'r-dnmrzs', 'r-bnwqim', 'r-lrvibr', 'r-m6rgpd', 'r-1xvli5t', 'r-1hdv0qi');
-  
+
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z');
+  path.setAttribute('d', EYE_OPEN_PATH);
   svgIcon.appendChild(path);
   viewButton.appendChild(svgIcon);
-  
+
   viewButton.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     toggleTweetHiddenContent(tweetElement);
   });
-  
-  const topActionButtons = tweetElement.querySelector('div.css-175oi2r.r-1awozwy.r-18u37iz.r-1cmwbt1.r-1wtj0ep');
+
+  const topActionButtons = findActionRow(tweetElement);
+
   if (topActionButtons) {
     topActionButtons.insertAdjacentElement('afterbegin', viewButton);
   } else {
@@ -61,113 +131,45 @@ function createViewHiddenButton(tweetElement) {
 
 function toggleTweetHiddenContent(tweetElement) {
   const viewButton = tweetElement.querySelector('.view-hidden-btn');
-  const hiddenContent = tweetElement.querySelector('div.css-175oi2r.r-9aw3ui');
-  
-  if (!hiddenContent || !viewButton) return;
-  
-  const isCurrentlyVisible = hiddenContent.classList.contains('show-hidden');
-  
-  if (isCurrentlyVisible) {
-    hiddenContent.classList.remove('show-hidden');
-    viewButton.classList.remove('content-visible');
-    
-    const svgIcon = viewButton.querySelector('svg');
-    if (svgIcon) {
-      const path = svgIcon.querySelector('path');
-      if (path) {
-        path.setAttribute('d', 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z');
-      }
-    }
-    
-    hiddenContent.style.setProperty('display', 'none', 'important');
-  } else {
-    hiddenContent.style.setProperty('display', 'block', 'important');
-    hiddenContent.classList.add('show-hidden');
-    viewButton.classList.add('content-visible');
-    
-    const svgIcon = viewButton.querySelector('svg');
-    if (svgIcon) {
-      const path = svgIcon.querySelector('path');
-      if (path) {
-        path.setAttribute('d', 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z');
-      }
-    }
-  }
-}
+  const blocks = findMediaBlocks(tweetElement);
 
-function isQuoteTweet(tweetElement) {
-  const allTextElements = tweetElement.querySelectorAll('div[dir="ltr"], span');
-  for (const element of allTextElements) {
-    if (element.textContent && element.textContent.trim() === 'Quote') {
-      return true;
-    }
-  }
-  
-  const quoteIndicator = tweetElement.querySelector('[data-testid="quoteTweet"]');
-  if (quoteIndicator) {
-    return true;
-  }
-  
-  const nestedTweet = tweetElement.querySelector('[data-testid="tweet"]');
-  if (nestedTweet && tweetElement !== nestedTweet) {
-    return true;
-  }
-  
-  return false;
-}
+  if (blocks.length === 0 || !viewButton) return;
 
-function hasMedia(tweetElement) {
-  const images = tweetElement.querySelectorAll('img[alt*="Image"], img[data-testid="tweetPhoto"]');
-  if (images.length > 0) {
-    return true;
+  const isCurrentlyVisible = blocks.some((block) => block.classList.contains('show-hidden'));
+
+  setMediaHidden(tweetElement, isCurrentlyVisible);
+  viewButton.classList.toggle('content-visible', !isCurrentlyVisible);
+
+  const path = viewButton.querySelector('svg path');
+  if (path) {
+    path.setAttribute('d', isCurrentlyVisible ? EYE_OPEN_PATH : EYE_CLOSED_PATH);
   }
-  
-  const videos = tweetElement.querySelectorAll('video, [data-testid="videoPlayer"]');
-  if (videos.length > 0) {
-    return true;
-  }
-  
-  const mediaContainers = tweetElement.querySelectorAll('[data-testid="tweetPhoto"], [data-testid="videoPlayer"], .css-175oi2r.r-1adg3ll.r-1ny4l3l');
-  if (mediaContainers.length > 0) {
-    return true;
-  }
-  
-  return false;
 }
 
 function processAllTweets() {
   const tweets = document.querySelectorAll('[data-testid="tweet"]');
 
-  tweets.forEach(tweet => {
-    const hiddenContent = tweet.querySelector('div.css-175oi2r.r-9aw3ui');
-    if (hiddenContent && !hiddenContent.classList.contains('show-hidden')) {
-      if (isQuoteTweet(tweet)) {
-        if (hasMedia(tweet)) {
-          hiddenContent.style.setProperty('display', 'none', 'important');
-        }
-      } else {
-        hiddenContent.style.setProperty('display', 'none', 'important');
-      }
+  tweets.forEach((tweet) => {
+    const alreadyRevealed = tweet.querySelector('.view-hidden-btn.content-visible');
+    if (!alreadyRevealed) {
+      setMediaHidden(tweet, true);
     }
-  });
-
-  tweets.forEach(tweet => {
     createViewHiddenButton(tweet);
   });
 }
 
 function init() {
   showChangelogIfNeeded();
-  
+
   processAllTweets();
-  
+
   setTimeout(processAllTweets, 1000);
   setTimeout(processAllTweets, 3000);
-  
+
   try {
     const observer = new MutationObserver((mutations) => {
       let shouldProcess = false;
-      
+
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
           mutation.addedNodes.forEach((node) => {
@@ -178,16 +180,23 @@ function init() {
               if (node.matches && node.matches('[data-testid="tweet"]')) {
                 shouldProcess = true;
               }
+              // media is lazy-loaded into tweets that are already on screen
+              if (node.querySelector && node.querySelector(MEDIA_SELECTOR)) {
+                shouldProcess = true;
+              }
+              if (node.matches && node.matches(MEDIA_SELECTOR)) {
+                shouldProcess = true;
+              }
             }
           });
         }
       });
-      
+
       if (shouldProcess) {
         setTimeout(processAllTweets, 10);
       }
     });
-    
+
     observer.observe(document.body, {
       childList: true,
       subtree: true
