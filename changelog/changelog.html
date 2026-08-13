@@ -7,57 +7,60 @@
     <link rel="stylesheet" href="changelog.css">
 </head>
 <body>
-    <div class="changelog-container">
-        <div class="changelog-header">
-            <div class="extension-name">X/Twitter Feed Video/Image Blocker</div>
-            <div class="version-badge" id="version-badge">v2.0.0</div>
-            <h1 class="version-title" id="version-title">Major Update</h1>
-            <div class="major-update-note" id="major-update-note">✨ We only show changelogs for major updates</div>
-        </div>
+    <main class="page">
+        <header class="header">
+            <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
+            <h1 class="title" id="version-title">What's new</h1>
+            <p class="meta">
+                Feed Video/Image Blocker<!--
+                --><span class="dot" id="version-dot" hidden> · </span><!--
+                --><span id="version-badge"></span>
+            </p>
+        </header>
 
-        <div class="changelog-content">
-            <div class="changes-section">
-                <div class="change-item new">
-                    <div class="change-icon">🖼️</div>
-                    <div class="change-content">
-                        <div class="change-title">Complete Media Blocking</div>
-                        <div class="change-description">Blocks images and videos for full control over your feed.</div>
-                    </div>
-                </div>
+        <!-- Returning users get the release notes; first-timers get how it works. -->
+        <ul class="changes" id="changes-update">
+            <li class="change">
+                <h2 class="change-title">Complete media blocking</h2>
+                <p class="change-description">Images and videos are hidden until you ask for them.</p>
+            </li>
+            <li class="change">
+                <h2 class="change-title">Quote tweet detection</h2>
+                <p class="change-description">Media shared inside quoted posts is caught too.</p>
+            </li>
+            <li class="change">
+                <h2 class="change-title">Click to reveal</h2>
+                <p class="change-description">An eye in the post header opens anything you want to see.</p>
+            </li>
+            <li class="change">
+                <h2 class="change-title">Native styling</h2>
+                <p class="change-description">Built to match X's own controls, down to the spacing.</p>
+            </li>
+        </ul>
 
-                <div class="change-item new">
-                    <div class="change-icon">🔗</div>
-                    <div class="change-content">
-                        <div class="change-title">Quote Tweet Detection</div>
-                        <div class="change-description">Automatically blocks shared media content.</div>
-                    </div>
-                </div>
+        <ul class="changes" id="changes-install" hidden>
+            <li class="change">
+                <h2 class="change-title">Media stays hidden</h2>
+                <p class="change-description">Every image and video in your feed is collapsed on sight.</p>
+            </li>
+            <li class="change">
+                <h2 class="change-title">Reveal what you want</h2>
+                <p class="change-description">Click the eye in a post's header to open its media, and again to put it back.</p>
+            </li>
+            <li class="change">
+                <h2 class="change-title">Only media is touched</h2>
+                <p class="change-description">Posts, replies and links read exactly as they did before.</p>
+            </li>
+        </ul>
 
-                <div class="change-item improved">
-                    <div class="change-icon">👁️</div>
-                    <div class="change-content">
-                        <div class="change-title">Minimal View Icon</div>
-                        <div class="change-description">Click to reveal content when you're ready.</div>
-                    </div>
-                </div>
-
-                <div class="change-item improved">
-                    <div class="change-icon">✨</div>
-                    <div class="change-content">
-                        <div class="change-title">Refined Design</div>
-                        <div class="change-description">Cleaner, more consistent interface.</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="changelog-footer">
-            <p class="footer-text">Take control of your social media experience</p>
-            <a href="https://x.com" class="try-now-button">Visit X to see the changes</a>
-        </div>
-    </div>
+        <footer class="footer">
+            <a class="button" id="cta" href="https://x.com">Go to X</a>
+            <p class="note" id="major-update-note">We only show changelogs for major updates.</p>
+        </footer>
+    </main>
 
     <script src="changelog.js"></script>
 </body>
 </html>
-
