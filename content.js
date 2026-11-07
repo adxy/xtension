@@ -5,6 +5,19 @@ const MEDIA_SELECTOR = [
   '[data-testid="previewInterstitial"]'
 ].join(',');
 
+// Articles are long-form reads, not media posts: their cover image and inline
+// images must stay visible. Matched by test id and by link target (/i/article/ID,
+// /user/article/ID), since the href is the part X is least likely to rename.
+const ARTICLE_SELECTOR = [
+  '[data-testid^="article"]',
+  '[data-testid*="twitterArticle"]',
+  'a[href*="/article/"]'
+].join(',');
+
+function isArticlePage() {
+  return /\/article\//.test(location.pathname);
+}
+
 // Nodes worth reprocessing for: new posts, media lazy-loaded into posts already
 // on screen, and the caret -- whose late arrival is what anchors our button.
 const WATCHED_SELECTOR = [
@@ -49,7 +62,11 @@ function showChangelogIfNeeded() {
 function findMediaBlocks(tweetElement) {
   const blocks = new Set();
 
+  if (isArticlePage()) return [];
+
   tweetElement.querySelectorAll(MEDIA_SELECTOR).forEach((media) => {
+    if (media.closest(ARTICLE_SELECTOR)) return;
+
     let node = media;
     let block = media;
 
